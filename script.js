@@ -8,14 +8,6 @@ var images = [];
 var map = "basic_map";
 var player = tilemap.addTile(new Tile(getImage("player"), 0, 0));
 var moveSpeed = 0.2;
-/*
-  Tilemap is 76 (width) by 29 (height)
-
-  var tile = new Tile("grass", 0, 0);
-*/
-
-// var tile1 = new Tile("grass", 0, 0);
-// var tile2 = new Tile("grass", 0, 1);
 
 function TileMap() {
   this.tiles = [];
@@ -79,7 +71,10 @@ function Tile(img, x, y) {
   this.x = x;
   this.y = y;
   this.img = img;
-  this.type = img.src
+  let str1 = img.src;
+  let str2 = str1.substr(str1.indexOf("/images/")+8, str1.length);
+  let str3 = str2.substr(0, str2.length-4)
+  this.type = str3;
 }
 
 function getImage(name) {
@@ -203,9 +198,9 @@ function loadJSON(path, callback) {
       xobj.overrideMimeType("application/json");
   xobj.open('GET', 'tilemaps/'+path+'.json', true);
   xobj.onreadystatechange = function () {
-        if (xobj.readyState == 4 && xobj.status == "200") {
-          callback(xobj.responseText);
-        }
+    if (xobj.readyState == 4 && xobj.status == "200") {
+      callback(xobj.responseText);
+    }
   };
   xobj.send(null);  
 }
