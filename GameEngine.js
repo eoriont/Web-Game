@@ -1,13 +1,14 @@
 var canvas, ctx;
-setupCanvas();
-
-var tilemap = new TileMap();
 var maxId = 0;
 var keysDown = {};
 var images = [];
 var map = "basic_map";
+var state = {start: false, loop: false};
+var ge = new GameEngine();
+var tilemap = ge.tilemap;
 var player = tilemap.addTile(new Tile(getImage("player"), 0, 0));
-var moveSpeed = 0.2;
+var keys = [];
+var mapObj;
 
 function TileMap() {
   this.tiles = [];
@@ -95,25 +96,16 @@ document.addEventListener("keyup", function(e) {
 });
 
 function getKeysPressed() {
-  let keys = [];
   let objkeys = Object.keys(keysDown);
-  for (let i = 0; i < objkeys.length; i++) if(Object.values(keysDown)[i]) keys.push(objkeys[i])
+  keys = [];
   keys.has = function (key) {
     return keys.includes(key);
   }
-  if (keys.has("W")) {
-    player.y-=moveSpeed;
-    console.log(tilemap.getTileByPos(player.x, player.y+1));
-  }
-  if (keys.has("A")) {
-    player.x-=moveSpeed;
-  }
-  if (keys.has("S")) {
-    player.y+=moveSpeed;
-  }
-  if (keys.has("D")) {
-    player.x+=moveSpeed;
-  }
+
+  for (let i = 0; i < objkeys.length; i++) 
+    if(Object.values(keysDown)[i]) 
+      keys.push(objkeys[i])
+  
 }
 
 function drawPlayer(x, y) {
@@ -122,29 +114,29 @@ function drawPlayer(x, y) {
   player = tilemap.renderTile(player);
 }
 
-// function loadTileMap() {
-//   let tilesOnMap = [];
-//   loadJSON("test", function (json) {
-//     tilesOnMap = JSON.parse(json);
+function loadTileMap() {
+  let tilesOnMap = [];
+  loadJSON(map, function (json) {
+    tilesOnMap = JSON.parse(json);
     
-//     for (let i = 0; i < tilesOnMap.length; i++) {
-//       let tile = tilesOnMap[i];
-//       tilemap.addTile(new Tile(images[tile.img], tile.x, tile.y));
-//     }
-//     console.log(tilemap.tiles)
-//   });
+    for (let i = 0; i < tilesOnMap.length; i++) {
+      let tile = tilesOnMap[i];
+      tilemap.addTile(new Tile(images[tile.img], tile.x, tile.y));
+    }
+  });
 
-  // for(let i = 0; i < 76; i++) {
-  //   for(let j = 0; j < 29; j++) {
-  //       tilemap.addTile(new Tile(images.dirt, i, j));
-  //   }
-  // }
-//}
+  for(let i = 0; i < 76; i++) {
+    for(let j = 0; j < 29; j++) {
+        tilemap.addTile(new Tile(images.dirt, i, j));
+    }
+  }
+}
 
 function loadTiledMap() {
   let tiled = [];
   loadJSON(map, function (json) {
     tiled = JSON.parse(json);
+    mapObj = tiled;
     let layer = tiled.layers[0].data;
     let tiledtypes = tiled.tilesets[0].tiles;
     let tiletypes = [];
@@ -174,14 +166,6 @@ function loadTiledMap() {
     }
   });
 }
-loadTiledMap();
-
-function drawCanvas() {
-  getKeysPressed();
-  tilemap.render();
-  drawPlayer(player.x, player.y);
-  window.requestAnimationFrame(drawCanvas);
-}
 
 function setupCanvas() {
   canvas = document.getElementById("canvas");
@@ -191,7 +175,6 @@ function setupCanvas() {
   canvas.tabIndex = 1000;
   ctx.imageSmoothingEnabled = false;
 }
-drawCanvas();
 
 function loadJSON(path, callback) {   
   var xobj = new XMLHttpRequest();
@@ -202,5 +185,46 @@ function loadJSON(path, callback) {
       callback(xobj.responseText);
     }
   };
-  xobj.send(null);  
+  xobj.send(null);
 }
+
+function GameEngine() {
+  this.tilemap = new TileMap();
+
+  this.start = function(callback) {
+    if(!state.start) {
+        setTimeout(() => {this.start(callback)}, 50);
+        return;
+    }
+    callback();
+  }
+
+  this.loop = function(callback) {
+    if(!state.loop) {
+        setTimeout(() => {this.loop(callback)}, 50);
+        return;
+    }
+    window.requestAnimationFrame(callback);
+    window.requestAnimationFrame(() => {this.loop(callback)});
+  }
+
+  this.keys = function(callback) {
+    window.requestAnimationFrame(()=>{callback(keys)});
+    window.requestAnimationFrame(()=>{this.keys(callback)});
+  }
+  
+}
+
+state.start = true;
+state.loop = true;
+
+ge.start(function() {
+  setupCanvas();
+  loadTiledMap();
+});
+
+ge.loop(() => {
+  getKeysPressed();
+  tilemap.render();
+  drawPlayer(player.x, player.y);
+});
